@@ -1,9 +1,9 @@
-from scrappers import dtf
+from scrappers.dtf import dtf
 
 URL = "https://dtf.ru/kek/819260"
 
 dtf_scrapper = dtf.DtfScrapper()
-dtf_scrapper.scrap_pages(3)
+dtf_scrapper.scrap_best_pages(3)
 
 # img_url = dtf_scrapper.find_images_in_post(URL)
 # download_image(img_url)

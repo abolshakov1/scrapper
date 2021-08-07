@@ -1,11 +1,8 @@
-import shutil
-
 import requests
 from bs4 import BeautifulSoup as _bs
 
-from downloader import download_image
-from scrapper import Scrapper
-
+# from downloader import download_image
+from scrappers.scrapper import Scrapper
 
 class DtfScrapper(Scrapper):
     url = "https://dtf.ru/kek/"
