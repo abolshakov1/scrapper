@@ -1,4 +1,4 @@
-from scrappers import dtf
+from scrappers.dtf import dtf
 
 URL = "https://dtf.ru/kek/819260"
 
