@@ -1,5 +1,4 @@
-import dtf
-from downloader import download_image
+from scrappers import dtf
 
 URL = "https://dtf.ru/kek/819260"
 
