@@ -4,10 +4,9 @@ import json
 from bs4 import BeautifulSoup as _bs
 
 from downloader import download_image
-from scrappers.scrapper import Scrapper
 from stats.stats_helper import get_stats_from_file, save_to_file
 
-class DtfScrapper(Scrapper):
+class DtfScrapper:
     url = "https://dtf.ru/kek/"
     new_url = "https://dtf.ru/kek/entries/new/"
     url_more = "https://dtf.ru/kek/more?"
