@@ -1,16 +1,22 @@
 import shutil
-import json
 import requests
-import wget
 
-import os, sys
+import os
 
-def download_image(url) -> str:
+def download_images(urls: list, dir_name: str) -> None:
+    home = os.path.expanduser('~/scrapper/images/')
+    path = os.path.join(home, dir_name+'/')
+    try:
+        os.mkdir(path)
+    except FileExistsError as exc:
+        pass
+    
+    # path.join('/')
+    for url in urls:
+        download_image(url, path)
 
-    # application_path = os.path.dirname(sys.executable)
 
-    path = os.path.expanduser('~/Documents/scrapper/images/')
-
+def download_image(url: str, path: str) -> None:
     r = requests.get(url, stream=True)
     try:
         name = url.split('/')[-2] + ".jpg"

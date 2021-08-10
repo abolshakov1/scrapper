@@ -3,7 +3,7 @@ from datetime import datetime
 import json
 from bs4 import BeautifulSoup as _bs
 
-from downloader import download_image
+from downloader import download_images
 from stats.stats_helper import get_stats_from_file, save_to_file
 
 class DtfScrapper:
@@ -15,14 +15,18 @@ class DtfScrapper:
     last_id = None
     last_sorting_value = None
     min_likes_to_download = 30
+    current_session_time = str(datetime.now().ctime())
 
-    stats = None
+
+    stats = {}
     new_imgs = []
 
     def __init__(self):
         self.stats = get_stats_from_file()
 
+
     def scrap_best_pages(self, count):
+    
         for i in range(count):
             first_page = i == 0
 
@@ -107,16 +111,20 @@ class DtfScrapper:
     def _update_record(self, data_id, img_link, likes):
         self.stats[data_id] = { 'link': img_link,
                                 'likes': likes,
-                                'updated_at': datetime.now().ctime(),
+                                'updated_at': self.current_session_time,
                                 'processed': False,
                                 'downloaded': False}
         self.new_imgs.append(data_id)
 
     def _download_new_imgs(self):
+        urls = []
         for id_ in self.new_imgs:
             url = self.stats[id_]['link']
-            download_image(url)
+            urls.append(url)
+            # todo: set flag on download
             self.stats[id_]['downloaded'] = True
+
+        download_images(urls, self.current_session_time)
 
         self.new_imgs.clear()
 
