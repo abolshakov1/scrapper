@@ -1,5 +1,5 @@
 import sqlite3
-
+import pathlib
 from utils import Singleton
 
 
@@ -7,8 +7,7 @@ class DbConnection(metaclass=Singleton):
     conn: sqlite3.Connection = None
 
     def __init__(self):
-        # todo: make dependency on dir execution
-        self.conn = sqlite3.connect('example.db')
+        self._init_connection()
 
     def init_table(self):
         query = '''
@@ -17,7 +16,8 @@ class DbConnection(metaclass=Singleton):
             data_id int not null unique,
             link text not null, 
             likes int not null, 
-            processed bool not null default 0, 
+            processed_by_bot bool not null default 0,
+            processed_by_me bool not null default 0,
             created_at text default current_timestamp, 
             approved_by_me bool default 0)
         '''
@@ -28,11 +28,11 @@ class DbConnection(metaclass=Singleton):
     def cursor(self):
         return self.conn.cursor()
 
-    def insert_dtf_record(self, data_id: int, link: str, likes: int, processed: bool):
-        values = (data_id, link, likes, processed)
+    def insert_dtf_record(self, data_id: int, link: str, likes: int):
+        values = (data_id, link, likes)
         query = "insert or ignore into " \
-                "DTF_IMAGES(data_id, link, likes, processed) " \
-                "values (?, ?, ?, ?)"
+                "DTF_IMAGES(data_id, link, likes) " \
+                "values (?, ?, ?)"
         self.cursor.execute(query, values)
         self.conn.commit()
 
@@ -44,15 +44,22 @@ class DbConnection(metaclass=Singleton):
         self.conn.commit()
 
     def update_dtf_links(self, values: list):
-        query = "update dtf_images set processed=? where link=?"
+        query = "update dtf_images set processed_by_me=?, processed_by_bot=? where link=?"
         self.cursor.executemany(query, values)
         self.conn.commit()
 
-    def select_dtf_links_by_processing(self, processed: bool = False):
+    def select_processed_by_me(self, processed: bool = False):
         values = (processed, )
-        query = 'select link from dtf_images where processed=?'
+        query = 'select data_id, link from dtf_images where processed_by_me=?'
         rows = self.cursor.execute(query, values).fetchall()
         print(rows)
+
+        return rows
+
+    def select_processed(self, processed_by_me: bool=True, processed_by_bot: bool=False):
+        values = (processed_by_me, processed_by_bot)
+        query = 'select from dft_images where processed_by_me=? and processed_by_bot=?'
+        rows = self.cursor.execute(query, values).fetchall()
 
         return rows
 
@@ -63,9 +70,16 @@ class DbConnection(metaclass=Singleton):
         except Exception as exc:
             print('Connection doesnt closed because of ', exc)
 
+    def _init_connection(self):
+        path = str(pathlib.Path(__file__).parent.resolve().parent) + '\\'
+        path += 'scrapper.db'
+        print('Db connected to ' + path)
+
+        self.conn = sqlite3.connect(path)
 
 db = DbConnection()
-db.init_table()
+
+# db.init_table()
 
 # db.init_table()
 
