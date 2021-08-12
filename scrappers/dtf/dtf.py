@@ -1,10 +1,9 @@
 import requests
+
 from datetime import datetime
-import json
 from bs4 import BeautifulSoup as _bs
 
-from downloader import download_images
-from stats.stats_helper import get_stats_from_file, save_to_file
+from db_layer.db import db
 
 class DtfScrapper:
     url = "https://dtf.ru/kek/"
@@ -17,16 +16,7 @@ class DtfScrapper:
     min_likes_to_download = 30
     current_session_time = str(datetime.now().ctime())
 
-
-    stats = {}
-    new_imgs = []
-
-    def __init__(self):
-        self.stats = get_stats_from_file()
-
-
     def scrap_best_pages(self, count):
-    
         for i in range(count):
             first_page = i == 0
 
@@ -41,8 +31,6 @@ class DtfScrapper:
             content = self._get_page_content(url, first_page)
             self._parse(content, first_page)
             self.page += 1
-
-        save_to_file(self.stats)
 
     def _get_last_sorting_value_from_first_page(self, soup):
         last_sorting_value_div = soup.find('div', class_='feed')
@@ -87,6 +75,8 @@ class DtfScrapper:
             self._get_last_sorting_value_from_first_page(soup)
 
         posts = soup.find_all("div", class_='feed__item l-island-round')
+        records = []
+
         for post in posts:
             data_id = self._get_data_id(post)
             img_link = self._get_img_link(post)
@@ -97,37 +87,14 @@ class DtfScrapper:
                 print(data_id, img_link, likes)
 
                 if likes < self.min_likes_to_download:
-                    print (f'Skipped{data_id} not enought likes {likes}')
+                    print(f'Skipped{data_id} not enough likes {likes}')
                     continue
-                if str(data_id) in self.stats or \
-                   self.stats.get(str(data_id), {}).get('downloaded', False):
-                   print(f'Skipped {data_id} already in list')
-                   continue
 
-                self._update_record(data_id, img_link, likes)
+                record = (data_id, img_link, likes)
+                records.append(record)
+
         print("==================================================================================")
-        self._download_new_imgs()
-
-    def _update_record(self, data_id, img_link, likes):
-        self.stats[data_id] = { 'link': img_link,
-                                'likes': likes,
-                                'updated_at': self.current_session_time,
-                                'processed': False,
-                                'downloaded': False}
-        self.new_imgs.append(data_id)
-
-    def _download_new_imgs(self):
-        urls = []
-        for id_ in self.new_imgs:
-            url = self.stats[id_]['link']
-            urls.append(url)
-            # todo: set flag on download
-            self.stats[id_]['downloaded'] = True
-
-        download_images(urls, self.current_session_time)
-
-        self.new_imgs.clear()
-
+        db.insert_many_dtf_records(records)
 
     def _get_page_content(self, url, firstPage=False):
         page = requests.get(url)
