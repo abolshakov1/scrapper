@@ -77,7 +77,9 @@ class DbConnection(metaclass=Singleton):
 
         self.conn = sqlite3.connect(path)
 
-db = DbConnection()
+
+if __name__ == "__main__":
+    db = DbConnection()
 
 # db.init_table()
 

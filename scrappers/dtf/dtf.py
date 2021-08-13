@@ -106,3 +106,7 @@ class DtfScrapper:
         self.last_sorting_value = data['last_sorting_value']
 
         return data['items_html']
+
+
+if __name__ == "__main__":
+    scrapper = DtfScrapper()

@@ -49,6 +49,7 @@ class ScrapperTelegramBot(metaclass=Singleton):
             i += 1
 
 
-bot = ScrapperTelegramBot()
-bot.send_unprocessed_img_for_approve()
+if __name__ == "__main__":
+    bot = ScrapperTelegramBot()
+    bot.send_unprocessed_img_for_approve()
 

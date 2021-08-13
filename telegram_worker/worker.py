@@ -90,4 +90,5 @@ class TelegramWorker(metaclass=Singleton):
         return True
 
 
-worker = TelegramWorker()
+if __name__ == "__main__":
+    worker = TelegramWorker()
