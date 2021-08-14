@@ -3,12 +3,19 @@ import pathlib
 from utils import Singleton
 
 
-class DbConnection(metaclass=Singleton):
+class DbConnection:
     conn: sqlite3.Connection = None
 
     def __init__(self):
-        self._init_connection()
+        self.init_table()
 
+    """
+        processed_by_bot - send or not to public 
+        processed_by_me - approved or not by me. need to know if bot got answer from me. 
+                          do not process posts if I didn't answer yet
+        approved_by_me - approved by me
+        
+    """
     def init_table(self):
         query = '''
             create table if not exists DTF_IMAGES 
@@ -16,25 +23,32 @@ class DbConnection(metaclass=Singleton):
             data_id int not null unique,
             link text not null, 
             likes int not null, 
-            processed_by_bot bool not null default 0,
+            processed_by_bot bool not null default 0, 
             processed_by_me bool not null default 0,
             created_at text default current_timestamp, 
-            approved_by_me bool default 0)
+            approved_by_me bool default 0, 
+            sent bool default 0)
         '''
         self.cursor.execute(query)
         self.conn.commit()
 
     @property
     def cursor(self):
+        if not self.conn:
+            self.open_connection()
+
         return self.conn.cursor()
 
-    def insert_dtf_record(self, data_id: int, link: str, likes: int):
-        values = (data_id, link, likes)
-        query = "insert or ignore into " \
-                "DTF_IMAGES(data_id, link, likes) " \
-                "values (?, ?, ?)"
-        self.cursor.execute(query, values)
-        self.conn.commit()
+    def open_connection(self):
+        path = str(pathlib.Path(__file__).parent.resolve().parent) + '\\'
+        path += 'scrapper.db'
+        print('Db connected to ' + path)
+
+        self.conn = sqlite3.connect(path)
+
+    def close_connection(self):
+        self.conn.close()
+        print('Connection closed')
 
     def insert_many_dtf_records(self, records):
         query = "insert or ignore into " \
@@ -43,55 +57,44 @@ class DbConnection(metaclass=Singleton):
         self.cursor.executemany(query, records)
         self.conn.commit()
 
-    def update_dtf_links(self, values: list):
-        query = "update dtf_images set processed_by_me=?, processed_by_bot=? where link=?"
+    def update_processed_by_me(self, values: list):
+        query = "update dtf_images set processed_by_me=TRUE, approved_by_me=? where data_id=?"
         self.cursor.executemany(query, values)
         self.conn.commit()
 
-    def select_processed_by_me(self, processed: bool = False):
-        values = (processed, )
-        query = 'select data_id, link from dtf_images where processed_by_me=?'
-        rows = self.cursor.execute(query, values).fetchall()
-        print(rows)
+    def update_sent(self, ids: list):
+        query = "update dtf_images set sent=TRUE where data_id=?"
+        self.cursor.executemany(query, ids)
+        self.conn.commit()
+
+    def select_unprocessed_and_unsent(self):
+        """
+        Returns record that didn't send and processed by me yet.
+        :return:
+        """
+        query = 'select data_id, link from dtf_images where processed_by_me=FALSE and sent=FALSE'
+        rows = self.cursor.execute(query).fetchall()
 
         return rows
 
-    def select_processed(self, processed_by_me: bool=True, processed_by_bot: bool=False):
-        values = (processed_by_me, processed_by_bot)
-        query = 'select from dft_images where processed_by_me=? and processed_by_bot=?'
-        rows = self.cursor.execute(query, values).fetchall()
+    def select_records_for_publish(self):
+        query = 'select data_id, link from dtf_images where ' \
+                'processed_by_me=TRUE and ' \
+                'processed_by_bot=FALSE and ' \
+                'approved_by_me=TRUE '
+        rows = self.cursor.execute(query).fetchall()
 
         return rows
 
     def __del__(self):
         try:
-            self.conn.close()
-            print('Connection closed')
+            self.close_connection()
         except Exception as exc:
             print('Connection doesnt closed because of ', exc)
-
-    def _init_connection(self):
-        path = str(pathlib.Path(__file__).parent.resolve().parent) + '\\'
-        path += 'scrapper.db'
-        print('Db connected to ' + path)
-
-        self.conn = sqlite3.connect(path)
 
 
 if __name__ == "__main__":
     db = DbConnection()
+    db.open_connection()
 
-# db.init_table()
-
-# db.init_table()
-
-# values = [(1, 'link3', 100000, False), (2, 'link4', 4356, True)]
-# values = [(False, 'link56'), ]
-# db.update_dtf_links(values)
-
-# db.insert_many_dtf_records(values)
-
-# db.insert_dtf_record('some link', 10, False)
-# db.select_dtf_rows(True)
-
-
+    # print(db.select_records_for_publish())
