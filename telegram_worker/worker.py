@@ -1,7 +1,5 @@
 import datetime
 
-import celery
-
 from dataclasses import dataclass
 
 from flask_apscheduler import APScheduler

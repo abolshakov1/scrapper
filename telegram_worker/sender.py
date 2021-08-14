@@ -1,4 +1,4 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Bot
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Bot, chat
 
 from db_layer.db import DbConnection
 from telegram_worker.settings import hurma_id, bot_token
@@ -42,6 +42,12 @@ class ScrapperTelegramBot(metaclass=Singleton):
         sent = []
 
         try:
+            if len(unprocessed) == 0:
+                self.bot.send_message(
+                    chat_id=hurma_id,
+                    text="No unprocessed images"
+                )
+
             i = 0
             for data in unprocessed:
                 if limiter and i >= limiter:

@@ -1,0 +1,7 @@
+BeautifulSoup4
+requests
+click
+python-telegram-bot
+flask
+Flask-APScheduler
+tzlocal<3.0
