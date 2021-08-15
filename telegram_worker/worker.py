@@ -6,6 +6,7 @@ from flask_apscheduler import APScheduler
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.ext import CallbackContext, Updater, CallbackQueryHandler
 
+import app_logger
 from db_layer.db import DbConnection
 from telegram_worker.settings import bot_token
 from utils import Singleton
@@ -26,19 +27,23 @@ class TelegramWorker(metaclass=Singleton):
 
     cache: dict = {int: CacheObject}
     cache_timeout = 10
+    ping_interval = 10
     db = DbConnection()
     scheduler: APScheduler = None
+    logger = app_logger.telegram_worker_logger
 
     def __init__(self, scheduler: APScheduler):
         self.scheduler = scheduler
 
     @classmethod
-    def start(cls, scheduler: APScheduler):
+    def start(cls, scheduler: APScheduler) -> None:
         instance = TelegramWorker(scheduler)
         instance._start()
 
-    def _start(self):
-        print ('Telegram worker start polling')
+    def _start(self) -> None:
+        self.logger.info('Telegram worker start polling')
+        self._schedule_ping_task()
+
         updater = Updater(bot_token)
         updater.dispatcher.add_handler(CallbackQueryHandler(self.callback_handler))
         updater.start_polling()
@@ -50,6 +55,7 @@ class TelegramWorker(metaclass=Singleton):
         query.answer()
 
         data_id = query.data
+        self.logger.info(f'Callback on {data_id}')
 
         updated = self._update_cache(data_id)
 
@@ -76,14 +82,14 @@ class TelegramWorker(metaclass=Singleton):
         )
 
     def process_cache_object(self, data_id):
-
         cache_object: CacheObject = self.cache.pop(data_id, None)
         if not cache_object:
-            print(f'Something went wrong and cache object with id {data_id} was deleted before processing')
+            self.logger.warning(f'Something went wrong and cache object with id {data_id} was deleted before processing')
             # todo: remove markup?
             return
 
-        print(f'Process cache object on timeout with data_id={data_id}, approved={cache_object.approved}')
+        self.logger.info(f'Process cache object on timeout with data_id={data_id}, '
+                         f'approved={cache_object.approved}')
 
         self.db.open_connection()
         self.db.update_processed_by_me([(cache_object.approved, int(data_id))])
@@ -105,17 +111,24 @@ class TelegramWorker(metaclass=Singleton):
             self.cache[data_id] = cache_object
             self._schedule_process_task(cache_object)
 
-            print(f'Img with data_id={data_id} was approved')
+            self.logger.info(f'Img with data_id={data_id} was approved')
         else:
             cache_object: CacheObject = self.cache[data_id]
             if cache_object.is_expired:
                 return False
 
             cache_object.approved = False
-            print(f'Img with data_id={data_id} was unapproved')
+            self.logger.info(f'Img with data_id={data_id} was unapproved')
 
         return True
 
+    def _schedule_ping_task(self):
+        self.scheduler.add_job(id='PING',
+                               func=self._ping_self,
+                               trigger='interval',
+                               seconds=self.ping_interval)
 
-if __name__ == "__main__":
-    worker = TelegramWorker()
+    def _ping_self(self):
+        self.logger.info('Telegram worker in process')
+
+

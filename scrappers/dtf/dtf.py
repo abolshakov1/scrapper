@@ -1,7 +1,10 @@
+import logging
+
 import requests
 
 from bs4 import BeautifulSoup as _bs
 
+import app_logger
 from db_layer.db import DbConnection
 
 
@@ -14,6 +17,8 @@ class DtfScrapper:
     _last_sorting_value = None
     _min_likes_to_download = 30
     _db = DbConnection()
+
+    _logger: logging.Logger = app_logger.scrapper_logger
 
     def scrap_best_pages(self, count=3):
         result = []
@@ -70,7 +75,7 @@ class DtfScrapper:
         return likes_count
 
     def _parse(self, content, first_request=True):
-        print("==================================================================================")
+        self._logger.info("==================================================================================")
 
         soup = _bs(content, "html.parser")
         if first_request:
@@ -89,13 +94,13 @@ class DtfScrapper:
                 print(data_id, img_link, likes)
 
                 if likes < self._min_likes_to_download:
-                    print(f'Skipped{data_id} not enough likes {likes}')
+                    self._logger.info(f'Skipped{data_id} not enough likes {likes}')
                     continue
 
                 record = (data_id, img_link, likes)
                 records.append(record)
 
-        print("==================================================================================")
+        self._logger.info("==================================================================================")
         return records
 
     def _get_page_content(self, url, first_page=False):
