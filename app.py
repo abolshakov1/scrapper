@@ -4,6 +4,7 @@ from flask import Flask
 from flask_apscheduler import APScheduler
 
 from app_logger import logger
+from publisher.tg_publisher import TgPublisher
 from scrappers.dtf.dtf import DtfScrapper
 from telegram_worker.sender import ScrapperTelegramBot
 from telegram_worker.worker import TelegramWorker
@@ -12,12 +13,16 @@ from threading import Thread
 
 dtf_scrap_schedule_timer = 1800
 approve_schedule_timer = 1000
+publish_timer = 3600
+
+publisher_update_cache = 3000
 
 app = Flask(__name__)
 scheduler = APScheduler()
 
 dft_scrapper = DtfScrapper()
 telegram_sender_bot = ScrapperTelegramBot()
+tg_publisher = TgPublisher()
 
 
 @app.route("/")
@@ -64,6 +69,20 @@ def schedule_telegram_sender():
                       func=telegram_sender_bot.send_unprocessed_img_for_approve,
                       trigger='interval',
                       seconds=approve_schedule_timer)
+
+
+def schedule_telegram_publisher():
+    logger.info('Scheduled telegram publisher task')
+
+    scheduler.add_job(id='Telegram publisher task',
+                      func=tg_publisher.publish,
+                      trigger='interval',
+                      seconds=publish_timer)
+
+    scheduler.add_job(id='Telegram publisher update cache',
+                      func=tg_publisher.update_cache,
+                      trigger='interval',
+                      seconds=publisher_update_cache)
 
 
 if __name__ == '__main__':
