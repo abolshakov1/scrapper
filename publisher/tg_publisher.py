@@ -1,12 +1,10 @@
 from telegram import Bot
 
 from db_layer.db import DbConnection
-from telegram_worker.settings import hurma_id
+from publisher.settings import bot_token
 
 
 class TgPublisher:
-
-    bot_token = '1903625927:AAEksNDK1GupjYl_LOPI-kd0aaWyfxSIOv0'
 
     bot: Bot = Bot(token=bot_token)
     _db = DbConnection()
