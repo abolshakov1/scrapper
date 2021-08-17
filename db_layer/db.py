@@ -50,6 +50,15 @@ class DbConnection:
         self.conn.close()
         print('Connection closed')
 
+    def _connection_handler(func):
+        def decorate(self, *args, **kwargs):
+            self.open_connection()
+            result = func(self, *args, **kwargs)
+            self.close_connection()
+
+            return result
+        return decorate
+
     def insert_many_dtf_records(self, records):
         query = "insert or ignore into " \
                 "dtf_images(data_id, link, likes) " \
@@ -67,6 +76,11 @@ class DbConnection:
         self.cursor.executemany(query, ids)
         self.conn.commit()
 
+    @_connection_handler
+    def update_processed_by_bot(self, values):
+        query = 'update dtf_images set processed_by_bot=TRUE where data_id=?'
+        self.cursor.executemany(query, values)
+
     def select_unprocessed_and_unsent(self):
         """
         Returns record that didn't send and processed by me yet.
@@ -77,6 +91,7 @@ class DbConnection:
 
         return rows
 
+    @_connection_handler
     def select_records_for_publish(self):
         query = 'select data_id, link from dtf_images where ' \
                 'processed_by_me=TRUE and ' \
