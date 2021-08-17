@@ -1,10 +1,8 @@
-import logging
-
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Bot, chat
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Bot
 
 import app_logger
 from db_layer.db import DbConnection
-from telegram_worker.settings import hurma_id, bot_token
+from telegram_worker.settings import service_channel_id, bot_token
 from utils import Singleton
 import time
 
@@ -15,7 +13,7 @@ class ScrapperTelegramBot(metaclass=Singleton):
 
     _logger = app_logger.bot_sender_logger
 
-    def _send_photo(self, data_id: str, img_link: str, chat_id: str = hurma_id):
+    def _send_photo(self, data_id: str, img_link: str, chat_id: str = service_channel_id):
         btn = InlineKeyboardButton(text='like', callback_data=data_id)
         markup = InlineKeyboardMarkup([[btn]])
         self._logger.debug(f'Send photo to chat {chat_id}, data_id={data_id}, img_link={img_link}')
@@ -26,17 +24,17 @@ class ScrapperTelegramBot(metaclass=Singleton):
 
     def _delimiter_decorator(func: callable):
         def decorate(self, *args, **kwargs):
-            self.bot.sendMessage(chat_id=hurma_id,
+            self.bot.sendMessage(chat_id=service_channel_id,
                                  text='New images for approve')
             time.sleep(1)
-            self.bot.sendMessage(chat_id=hurma_id,
+            self.bot.sendMessage(chat_id=service_channel_id,
                                  text='=================================')
             time.sleep(1)
 
             result = func(self, *args, **kwargs)
 
             time.sleep(1)
-            self.bot.sendMessage(chat_id=hurma_id,
+            self.bot.sendMessage(chat_id=service_channel_id,
                                  text='=================================')
             return result
         return decorate
@@ -51,7 +49,7 @@ class ScrapperTelegramBot(metaclass=Singleton):
         try:
             if len(unprocessed) == 0:
                 self.bot.send_message(
-                    chat_id=hurma_id,
+                    chat_id=service_channel_id,
                     text="No unprocessed images"
                 )
 
@@ -79,4 +77,3 @@ class ScrapperTelegramBot(metaclass=Singleton):
 if __name__ == "__main__":
     bot = ScrapperTelegramBot()
     bot.send_unprocessed_img_for_approve()
-
