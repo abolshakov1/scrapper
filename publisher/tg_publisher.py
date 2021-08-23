@@ -1,7 +1,7 @@
 from telegram import Bot
 
 from db_layer.db import DbConnection
-from publisher.settings import bot_token
+from publisher.settings import bot_token, hurma_id
 
 
 class TgPublisher:
@@ -9,7 +9,7 @@ class TgPublisher:
     bot: Bot = Bot(token=bot_token)
     _db = DbConnection()
     chat_ids = [
-
+        hurma_id
     ]
     cache: list = []
 
@@ -28,8 +28,16 @@ class TgPublisher:
             return
 
         print (f'Publish {data_id} {link}')
-        for id_ in self.chat_ids:
-            self.bot.send_photo(chat_id=id_,
-                                photo=link)
+        try:
+            for id_ in self.chat_ids:
+                self.bot.send_photo(chat_id=id_,
+                                    photo=link)
+        except Exception as exc:
+            print ('Exception on publish ', exc)
+        finally:
+            self._db.update_processed_by_bot([ (int(data_id),    ) ])
 
-        self._db.update_processed_by_bot(data_id)
+
+if __name__ == 'main':
+    publisher = TgPublisher()
+    publisher.publish

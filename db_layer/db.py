@@ -40,7 +40,7 @@ class DbConnection:
         return self.conn.cursor()
 
     def open_connection(self):
-        path = str(pathlib.Path(__file__).parent.resolve().parent) + '\\'
+        path = str(pathlib.Path(__file__).parent.resolve().parent) + '/'
         path += 'scrapper.db'
         print('Db connected to ' + path)
 
@@ -80,6 +80,7 @@ class DbConnection:
     def update_processed_by_bot(self, values):
         query = 'update dtf_images set processed_by_bot=TRUE where data_id=?'
         self.cursor.executemany(query, values)
+        self.conn.commit()
 
     def select_unprocessed_and_unsent(self):
         """
