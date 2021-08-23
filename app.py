@@ -11,11 +11,11 @@ from telegram_worker.worker import TelegramWorker
 
 from threading import Thread
 
-dtf_scrap_schedule_timer = 1800
-approve_schedule_timer = 1000
-publish_timer = 3600
+dtf_scrap_schedule_timer = 3600
+approve_schedule_timer = 3660
+publish_timer = 1800
 
-publisher_update_cache = 3000
+publisher_update_cache = 1600
 
 app = Flask(__name__)
 scheduler = APScheduler()
@@ -88,8 +88,9 @@ def schedule_telegram_publisher():
 if __name__ == '__main__':
     logger.info('Scrapper app start working')
 
-    # schedule_scrapping()
+    schedule_scrapping()
     schedule_telegram_sender()
+    schedule_telegram_publisher()
 
     scheduler.start()
     start_t_worker()
