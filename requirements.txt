@@ -5,3 +5,6 @@ python-telegram-bot
 flask
 Flask-APScheduler
 tzlocal<3.0
+uWSGI
+Jinja2
+Werkzeug
